@@ -119,14 +119,28 @@ with tab1:
     monthly_sales_cat = filtered.groupby(['YearMonth', 'Category'])['Sales'].sum().unstack(fill_value=0)
     monthly_sales_cat.index = monthly_sales_cat.index.to_series().dt.strftime('%Y-%m')
 
-    if highlight_q4:
-        st.line_chart(monthly_sales_cat)
-        st.caption("Q4 periods (Oct-Dec) are highlighted in the data above.")
-    else:
-        st.line_chart(monthly_sales_cat)
+    # Render category trends with legend via matplotlib for color control
+    fig, ax = plt.subplots(figsize=(10, 5))
+    for col in monthly_sales_cat.columns:
+        ax.plot(monthly_sales_cat.index, monthly_sales_cat[col], marker='o', label=col)
 
+    ax.set_title('Monthly Sales Trend by Category')
+    ax.set_xlabel('Month')
+    ax.set_ylabel('Sales')
+    ax.tick_params(axis='x', rotation=45)
+    ax.legend(title='Category', loc='upper left')
+
+    if highlight_q4:
+        # highlight Q4 date ranges on the matplotlib chart
+        months = pd.to_datetime(monthly_sales_cat.index)
+        years = sorted({d.year for d in months})
+        for year in years:
+            ax.axvspan(pd.Timestamp(f"{year}-10-01"), pd.Timestamp(f"{year}-12-31"), color='orange', alpha=0.15)
+        st.caption("Q4 periods (Oct-Dec) are highlighted in the chart below.")
+
+    st.pyplot(fig)
     st.markdown("---")
-    st.caption("Monthly sales trend is displayed separately for each category.")
+    st.caption("Monthly sales trend is displayed separately for each category with legend.")
 
 with tab2:
     st.header("Sales Analysis")
