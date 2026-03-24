@@ -88,7 +88,7 @@ filtered = merged[
     (merged['Order Date'].dt.date <= end_date)
 ]
 
-st.title("Customer Orders & Returns Dashboard")
+st.title("Orders & Returns Dashboard")
 
 # Calculate metrics
 total_sales = filtered['Sales'].sum()
