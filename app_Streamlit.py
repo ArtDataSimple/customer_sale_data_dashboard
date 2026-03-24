@@ -23,22 +23,44 @@ customers, orders, merged = load_data()
 
 st.sidebar.title("Filters")
 
+# Reset filters button
+if st.sidebar.button("Reset All Filters"):
+    st.rerun()
+
 category_filter = st.sidebar.multiselect(
     "Category",
-    options=orders['Category'].unique(),
-    default=orders['Category'].unique()
+    options=sorted(orders['Category'].unique()),
+    default=sorted(orders['Category'].unique())
+)
+
+subcategory_filter = st.sidebar.multiselect(
+    "Sub-Category",
+    options=sorted(merged['Sub-Category'].unique()),
+    default=sorted(merged['Sub-Category'].unique())
 )
 
 region_filter = st.sidebar.multiselect(
     "Region",
-    options=merged['Region'].unique(),
-    default=merged['Region'].unique()
+    options=sorted(merged['Region'].unique()),
+    default=sorted(merged['Region'].unique())
+)
+
+state_filter = st.sidebar.multiselect(
+    "State",
+    options=sorted(merged['State'].unique()),
+    default=sorted(merged['State'].unique())
 )
 
 segment_filter = st.sidebar.multiselect(
     "Segment",
-    options=merged['Segment'].unique(),
-    default=merged['Segment'].unique()
+    options=sorted(merged['Segment'].unique()),
+    default=sorted(merged['Segment'].unique())
+)
+
+ship_mode_filter = st.sidebar.multiselect(
+    "Ship Mode",
+    options=sorted(merged['Ship Mode'].unique()),
+    default=sorted(merged['Ship Mode'].unique())
 )
 
 min_date = orders['Order Date'].min().date()
@@ -60,14 +82,18 @@ else:
 
 filtered = merged[
     (merged['Category'].isin(category_filter)) &
+    (merged['Sub-Category'].isin(subcategory_filter)) &
     (merged['Region'].isin(region_filter)) &
+    (merged['State'].isin(state_filter)) &
     (merged['Segment'].isin(segment_filter)) &
+    (merged['Ship Mode'].isin(ship_mode_filter)) &
     (merged['Order Date'].dt.date >= start_date) &
     (merged['Order Date'].dt.date <= end_date)
 ]
 
 st.title("Customer Orders & Returns Dashboard")
 
+# Calculate metrics
 total_sales = filtered['Sales'].sum()
 total_profit = filtered['Profit'].sum()
 return_rate = filtered[['Order ID','Returned']].drop_duplicates()['Returned'].mean()
@@ -75,64 +101,99 @@ unique_customers = filtered['Customer ID'].nunique()
 unique_orders = filtered['Order ID'].nunique()
 avg_order_value = total_sales / unique_orders if unique_orders > 0 else 0
 
-col1, col2, col3, col4, col5, col6 = st.columns(6)
-col1.metric("Total Sales", f"${total_sales/1e6:.2f}M.")
-col2.metric("Total Profit", f"${total_profit/1e6:.2f}M.")
-col3.metric("Return Rate", f"{return_rate*100:.2f}%")
-col4.metric("Unique Customers", f"{unique_customers:,}")
-col5.metric("Unique Orders", f"{unique_orders:,}")
-col6.metric("Avg. Order Value", f"${avg_order_value:,.2f}")
+# Create tabs
+tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Sales Analysis", "Returns Analysis", "Geographic Analysis"])
 
-st.subheader("Monthly Sales")
+with tab1:
+    st.header("Key Metrics")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Sales", f"${total_sales/1e6:.2f}M")
+    col2.metric("Total Profit", f"${total_profit/1e6:.2f}M")
+    col3.metric("Return Rate", f"{return_rate*100:.2f}%")
 
-filtered['YearMonth'] = filtered['Order Date'].dt.to_period('M').dt.to_timestamp()
-monthly = filtered.groupby(['YearMonth','Category'])['Sales'].sum().unstack()
+    col4, col5, col6 = st.columns(3)
+    col4.metric("Unique Customers", f"{unique_customers:,}")
+    col5.metric("Unique Orders", f"{unique_orders:,}")
+    col6.metric("Avg. Order Value", f"${avg_order_value:,.2f}")
 
-fig, ax = plt.subplots(figsize=(10,5))
-for col in monthly.columns:
-    ax.plot(monthly.index, monthly[col], label=col)
+    st.subheader("Monthly Sales Trend")
+    filtered['YearMonth'] = filtered['Order Date'].dt.to_period('M').dt.to_timestamp()
+    monthly_sales = filtered.groupby('YearMonth')['Sales'].sum().reset_index()
+    monthly_sales['YearMonth'] = monthly_sales['YearMonth'].dt.strftime('%Y-%m')
 
-if highlight_q4:
-    for year in monthly.index.year.unique():
-        ax.axvspan(pd.Timestamp(f"{year}-10-01"), pd.Timestamp(f"{year}-12-31"), color='orange', alpha=0.2)
+    if highlight_q4:
+        # Add Q4 highlighting using Streamlit's chart
+        st.line_chart(monthly_sales.set_index('YearMonth'))
+        st.caption("Q4 periods (Oct-Dec) are highlighted in the data above.")
+    else:
+        st.line_chart(monthly_sales.set_index('YearMonth'))
 
-ax.legend()
-st.pyplot(fig)
+with tab2:
+    st.header("Sales Analysis")
 
-st.subheader("Return Rate by Category")
-order_level = filtered[['Order ID','Category','Returned']].drop_duplicates()
-st.bar_chart(order_level.groupby('Category')['Returned'].mean())
+    col1, col2 = st.columns(2)
 
-st.subheader("Profit by Segment")
-st.bar_chart(filtered.groupby('Segment')['Profit'].sum())
+    with col1:
+        st.subheader("Sales by Category")
+        category_sales = filtered.groupby('Category')['Sales'].sum().sort_values(ascending=False)
+        st.bar_chart(category_sales)
 
-st.subheader("Sales by Region")
-sales_by_region = filtered.groupby('Region')['Sales'].sum().sort_values(ascending=False)
-fig, ax = plt.subplots(figsize=(10, 5))
-bars = ax.bar(sales_by_region.index, sales_by_region.values, color='steelblue')
+    with col2:
+        st.subheader("Sales by Sub-Category")
+        subcategory_sales = filtered.groupby('Sub-Category')['Sales'].sum().sort_values(ascending=False).head(10)
+        st.bar_chart(subcategory_sales)
 
-# Add value labels on top of bars
-for bar in bars:
-    height = bar.get_height()
-    ax.text(bar.get_x() + bar.get_width()/2., height,
-            f'${height/1e6:.1f}M.',
-            ha='center', va='bottom', fontsize=10)
+    st.subheader("Profit by Segment")
+    segment_profit = filtered.groupby('Segment')['Profit'].sum().sort_values(ascending=False)
+    st.bar_chart(segment_profit)
 
-ax.ticklabel_format(style='plain', axis='y')
-ax.set_ylabel('Sales')
-ax.set_xlabel('Region')
-st.pyplot(fig)
+with tab3:
+    st.header("Returns Analysis")
 
-# City-level table: Orders and AOV below Sales by Region
-city_order = filtered.groupby('City').agg(
-    Orders=('Order ID','nunique'),
-    TotalSales=('Sales','sum')
-).reset_index()
-city_order['AOV'] = city_order['TotalSales'] / city_order['Orders']
-city_order = city_order.sort_values('TotalSales', ascending=False)
-city_order['AOV'] = city_order['AOV'].map('${:,.2f}'.format)
-city_order = city_order.rename(columns={'TotalSales':'Sales'})
-city_order = city_order[['City','Orders','AOV']].reset_index(drop=True)
+    col1, col2 = st.columns(2)
 
-st.subheader('City Orders & AOV')
-st.dataframe(city_order, height=320)
+    with col1:
+        st.subheader("Return Rate by Category")
+        order_level = filtered[['Order ID','Category','Returned']].drop_duplicates()
+        return_by_cat = order_level.groupby('Category')['Returned'].mean() * 100
+        st.bar_chart(return_by_cat)
+
+    with col2:
+        st.subheader("Return Rate by Sub-Category")
+        order_level_sub = filtered[['Order ID','Sub-Category','Returned']].drop_duplicates()
+        return_by_subcat = order_level_sub.groupby('Sub-Category')['Returned'].mean() * 100
+        return_by_subcat = return_by_subcat.sort_values(ascending=False).head(10)
+        st.bar_chart(return_by_subcat)
+
+    st.subheader("Returns by Ship Mode")
+    order_level_ship = filtered[['Order ID','Ship Mode','Returned']].drop_duplicates()
+    return_by_ship = order_level_ship.groupby('Ship Mode')['Returned'].mean() * 100
+    st.bar_chart(return_by_ship)
+
+with tab4:
+    st.header("Geographic Analysis")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Sales by Region")
+        region_sales = filtered.groupby('Region')['Sales'].sum().sort_values(ascending=False)
+        st.bar_chart(region_sales)
+
+    with col2:
+        st.subheader("Sales by State")
+        state_sales = filtered.groupby('State')['Sales'].sum().sort_values(ascending=False).head(10)
+        st.bar_chart(state_sales)
+
+    st.subheader("Top Cities by Orders & AOV")
+    city_order = filtered.groupby('City').agg(
+        Orders=('Order ID','nunique'),
+        TotalSales=('Sales','sum')
+    ).reset_index()
+    city_order['AOV'] = city_order['TotalSales'] / city_order['Orders']
+    city_order = city_order.sort_values('TotalSales', ascending=False).head(20)
+    city_order['AOV'] = city_order['AOV'].map('${:,.2f}'.format)
+    city_order = city_order.rename(columns={'TotalSales':'Sales'})
+    city_order = city_order[['City','Orders','AOV']].reset_index(drop=True)
+
+    st.dataframe(city_order, height=400)
