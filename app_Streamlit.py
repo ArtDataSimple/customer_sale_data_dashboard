@@ -107,4 +107,17 @@ st.subheader("Profit by Segment")
 st.bar_chart(filtered.groupby('Segment')['Profit'].sum())
 
 st.subheader("Sales by Region")
-st.bar_chart(filtered.groupby('Region')['Sales'].sum())
+sales_by_region = filtered.groupby('Region')['Sales'].sum().sort_values(ascending=False)
+fig, ax = plt.subplots(figsize=(10, 5))
+bars = ax.bar(sales_by_region.index, sales_by_region.values, color='steelblue')
+
+# Add value labels on top of bars
+for bar in bars:
+    height = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width()/2., height,
+            f'${height/1e6:.1f}M.',
+            ha='center', va='bottom', fontsize=10)
+
+ax.set_ylabel('Sales')
+ax.set_xlabel('Region')
+st.pyplot(fig)
