@@ -118,6 +118,7 @@ for bar in bars:
             f'${height/1e6:.1f}M.',
             ha='center', va='bottom', fontsize=10)
 
+ax.ticklabel_format(style='plain', axis='y')
 ax.set_ylabel('Sales')
 ax.set_xlabel('Region')
 st.pyplot(fig)
