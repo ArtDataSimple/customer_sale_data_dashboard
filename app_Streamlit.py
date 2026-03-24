@@ -122,3 +122,17 @@ ax.ticklabel_format(style='plain', axis='y')
 ax.set_ylabel('Sales')
 ax.set_xlabel('Region')
 st.pyplot(fig)
+
+# City-level table: Orders and AOV below Sales by Region
+city_order = filtered.groupby('City').agg(
+    Orders=('Order ID','nunique'),
+    TotalSales=('Sales','sum')
+).reset_index()
+city_order['AOV'] = city_order['TotalSales'] / city_order['Orders']
+city_order = city_order.sort_values('TotalSales', ascending=False)
+city_order['AOV'] = city_order['AOV'].map('${:,.2f}'.format)
+city_order = city_order.rename(columns={'TotalSales':'Sales'})
+city_order[['City','Orders','AOV']].reset_index(drop=True)
+
+st.subheader('City Orders & AOV')
+st.table(city_order[['City','Orders','AOV']])
