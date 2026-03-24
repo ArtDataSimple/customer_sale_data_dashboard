@@ -76,8 +76,8 @@ unique_orders = filtered['Order ID'].nunique()
 avg_order_value = total_sales / unique_orders if unique_orders > 0 else 0
 
 col1, col2, col3, col4, col5, col6 = st.columns(6)
-col1.metric("Total Sales", f"${total_sales:,.0f}")
-col2.metric("Total Profit", f"${total_profit:,.0f}")
+col1.metric("Total Sales", f"${total_sales/1e6:.2f}M.")
+col2.metric("Total Profit", f"${total_profit/1e6:.2f}M.")
 col3.metric("Return Rate", f"{return_rate*100:.2f}%")
 col4.metric("Unique Customers", f"{unique_customers:,}")
 col5.metric("Unique Orders", f"{unique_orders:,}")
