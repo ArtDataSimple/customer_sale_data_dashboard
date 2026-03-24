@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 @st.cache_data
 def load_data():
@@ -121,15 +122,15 @@ with tab1:
     # Render category trends with legend via matplotlib for color control
     fig, ax = plt.subplots(figsize=(10, 5))
     for col in monthly_sales_cat.columns:
-        ax.plot(monthly_sales_cat.index, monthly_sales_cat[col], marker='o', label=col)
+        ax.plot(monthly_sales_cat.index, monthly_sales_cat[col], linewidth=2, alpha=0.85, label=col)
 
     ax.set_title('Monthly Sales Trend by Category')
     ax.set_xlabel('Month')
     ax.set_ylabel('Sales')
 
-    # Format x-axis as Year-Month
-    ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m'))
-    ax.xaxis.set_major_locator(plt.matplotlib.dates.MonthLocator(interval=1))
+    # Format x-axis as Year-Month and reduce ticks for readability
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
     ax.tick_params(axis='x', rotation=45)
     ax.legend(title='Category', loc='upper left')
 
