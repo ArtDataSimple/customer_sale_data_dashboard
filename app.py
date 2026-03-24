@@ -23,10 +23,6 @@ customers, orders, merged = load_data()
 
 st.sidebar.title("Filters")
 
-# Reset filters button
-if st.sidebar.button("Reset All Filters"):
-    st.rerun()
-
 category_filter = st.sidebar.multiselect(
     "Category",
     options=sorted(orders['Category'].unique()),
