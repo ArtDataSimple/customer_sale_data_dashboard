@@ -105,3 +105,6 @@ st.bar_chart(order_level.groupby('Category')['Returned'].mean())
 
 st.subheader("Profit by Segment")
 st.bar_chart(filtered.groupby('Segment')['Profit'].sum())
+
+st.subheader("Sales by Region")
+st.bar_chart(filtered.groupby('Region')['Sales'].sum())
