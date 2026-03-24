@@ -66,7 +66,7 @@ filtered = merged[
     (merged['Order Date'].dt.date <= end_date)
 ]
 
-st.title("Sales Dashboard")
+st.title("Customer Orders & Returns Dashboard")
 
 total_sales = filtered['Sales'].sum()
 total_profit = filtered['Profit'].sum()
