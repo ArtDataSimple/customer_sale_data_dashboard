@@ -117,7 +117,6 @@ with tab1:
 
     # Monthly sales by category (line per category)
     monthly_sales_cat = filtered.groupby(['YearMonth', 'Category'])['Sales'].sum().unstack(fill_value=0)
-    monthly_sales_cat.index = monthly_sales_cat.index.to_series().dt.strftime('%Y-%m')
 
     # Render category trends with legend via matplotlib for color control
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -127,6 +126,10 @@ with tab1:
     ax.set_title('Monthly Sales Trend by Category')
     ax.set_xlabel('Month')
     ax.set_ylabel('Sales')
+
+    # Format x-axis as Year-Month
+    ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m'))
+    ax.xaxis.set_major_locator(plt.matplotlib.dates.MonthLocator(interval=1))
     ax.tick_params(axis='x', rotation=45)
     ax.legend(title='Category', loc='upper left')
 
