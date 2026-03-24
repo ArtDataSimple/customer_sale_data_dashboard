@@ -114,15 +114,19 @@ with tab1:
 
     st.subheader("Monthly Sales Trend")
     filtered['YearMonth'] = filtered['Order Date'].dt.to_period('M').dt.to_timestamp()
-    monthly_sales = filtered.groupby('YearMonth')['Sales'].sum().reset_index()
-    monthly_sales['YearMonth'] = monthly_sales['YearMonth'].dt.strftime('%Y-%m')
+
+    # Monthly sales by category (line per category)
+    monthly_sales_cat = filtered.groupby(['YearMonth', 'Category'])['Sales'].sum().unstack(fill_value=0)
+    monthly_sales_cat.index = monthly_sales_cat.index.to_series().dt.strftime('%Y-%m')
 
     if highlight_q4:
-        # Add Q4 highlighting using Streamlit's chart
-        st.line_chart(monthly_sales.set_index('YearMonth'))
+        st.line_chart(monthly_sales_cat)
         st.caption("Q4 periods (Oct-Dec) are highlighted in the data above.")
     else:
-        st.line_chart(monthly_sales.set_index('YearMonth'))
+        st.line_chart(monthly_sales_cat)
+
+    st.markdown("---")
+    st.caption("Monthly sales trend is displayed separately for each category.")
 
 with tab2:
     st.header("Sales Analysis")
