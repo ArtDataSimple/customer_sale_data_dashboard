@@ -132,7 +132,7 @@ city_order['AOV'] = city_order['TotalSales'] / city_order['Orders']
 city_order = city_order.sort_values('TotalSales', ascending=False)
 city_order['AOV'] = city_order['AOV'].map('${:,.2f}'.format)
 city_order = city_order.rename(columns={'TotalSales':'Sales'})
-city_order[['City','Orders','AOV']].reset_index(drop=True)
+city_order = city_order[['City','Orders','AOV']].head(10).reset_index(drop=True)
 
 st.subheader('City Orders & AOV')
-st.table(city_order[['City','Orders','AOV']])
+st.dataframe(city_order, height=320)
