@@ -71,11 +71,17 @@ st.title("Customer Orders & Returns Dashboard")
 total_sales = filtered['Sales'].sum()
 total_profit = filtered['Profit'].sum()
 return_rate = filtered[['Order ID','Returned']].drop_duplicates()['Returned'].mean()
+unique_customers = filtered['Customer ID'].nunique()
+unique_orders = filtered['Order ID'].nunique()
+avg_order_value = total_sales / unique_orders if unique_orders > 0 else 0
 
-col1, col2, col3 = st.columns(3)
-col1.metric("Sales", f"${total_sales:,.0f}")
-col2.metric("Profit", f"${total_profit:,.0f}")
+col1, col2, col3, col4, col5, col6 = st.columns(6)
+col1.metric("Total Sales", f"${total_sales:,.0f}")
+col2.metric("Total Profit", f"${total_profit:,.0f}")
 col3.metric("Return Rate", f"{return_rate*100:.2f}%")
+col4.metric("Unique Customers", f"{unique_customers:,}")
+col5.metric("Unique Orders", f"{unique_orders:,}")
+col6.metric("Avg. Order Value", f"${avg_order_value:,.2f}")
 
 st.subheader("Monthly Sales")
 
