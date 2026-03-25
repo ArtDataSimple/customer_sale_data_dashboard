@@ -218,6 +218,15 @@ with tab4:
 
 with tab5:
     st.header("Data")
+
+    csv = filtered.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Download full filtered dataset as CSV",
+        data=csv,
+        file_name="filtered_dataset.csv",
+        mime="text/csv"
+    )
+
     st.subheader("Filtered rows")
     st.write("Showing the filtered dataset based on current sidebar filters and date range")
     st.dataframe(filtered.head(200), use_container_width=True)
