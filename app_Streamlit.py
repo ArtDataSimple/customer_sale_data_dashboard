@@ -98,7 +98,7 @@ unique_orders = filtered['Order ID'].nunique()
 avg_order_value = total_sales / unique_orders if unique_orders > 0 else 0
 
 # Create tabs
-tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Sales Analysis", "Returns Analysis", "Geographic Analysis"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Overview", "Sales Analysis", "Returns Analysis", "Geographic Analysis", "Data"])
 
 with tab1:
     st.header("Key Metrics")
@@ -193,3 +193,12 @@ with tab4:
     city_order = city_order[['City','Orders','AOV']].reset_index(drop=True)
 
     st.dataframe(city_order, height=400)
+
+with tab5:
+    st.header("Data")
+    st.subheader("Filtered rows")
+    st.write("Showing the filtered dataset based on current sidebar filters and date range")
+    st.dataframe(filtered.head(200), use_container_width=True)
+    st.markdown("---")
+    st.subheader("Dataset summary")
+    st.write(filtered.describe(include='all'))
