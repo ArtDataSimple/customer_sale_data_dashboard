@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import plotly.express as px
+import plotly.graph_objects as go
 
 @st.cache_data
 def load_data():
@@ -99,7 +101,7 @@ unique_orders = filtered['Order ID'].nunique()
 avg_order_value = total_sales / unique_orders if unique_orders > 0 else 0
 
 # Create tabs
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Overview", "Sales Analysis", "Returns Analysis", "Geographic Analysis", "Data"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Overview", "Sales Analysis", "Returns Analysis", "Geographic Analysis", "Custom Visualization", "Data"])
 
 with tab1:
     st.header("Key Metrics")
@@ -217,6 +219,166 @@ with tab4:
     st.dataframe(city_order, height=400)
 
 with tab5:
+    st.header("Custom Visualization")
+    st.markdown("Create custom data visualizations by selecting a chart type and specifying columns.")
+    
+    # Get numeric and categorical columns
+    numeric_columns = filtered.select_dtypes(include=['int64', 'float64']).columns.tolist()
+    categorical_columns = filtered.select_dtypes(include=['object']).columns.tolist()
+    all_columns = numeric_columns + categorical_columns
+    
+    col_viz_type, col_spacing = st.columns([2, 1])
+    
+    with col_viz_type:
+        viz_type = st.selectbox(
+            "Select Visualization Type",
+            options=[
+                "Scatter Plot",
+                "Line Chart",
+                "Bar Chart",
+                "Histogram",
+                "Box Plot",
+                "Violin Plot",
+                "Heatmap (Correlation)"
+            ],
+            help="Choose the type of visualization you want to create"
+        )
+    
+    st.markdown("---")
+    
+    # Scatter Plot
+    if viz_type == "Scatter Plot":
+        col1, col2 = st.columns(2)
+        with col1:
+            x_col = st.selectbox("Select X-axis column", numeric_columns, key="scatter_x")
+        with col2:
+            y_col = st.selectbox("Select Y-axis column", numeric_columns, key="scatter_y", 
+                                index=1 if len(numeric_columns) > 1 else 0)
+        
+        color_col = st.selectbox("Color by (optional)", options=[None] + categorical_columns, 
+                                help="Optionally color points by a categorical variable")
+        size_col = st.selectbox("Size by (optional)", options=[None] + numeric_columns,
+                               help="Optionally size points by a numeric variable")
+        
+        if x_col and y_col:
+            fig = px.scatter(filtered, x=x_col, y=y_col, color=color_col, size=size_col,
+                           title=f"{x_col} vs {y_col}",
+                           hover_data={"Order ID": True} if "Order ID" in filtered.columns else {})
+            st.plotly_chart(fig, use_container_width=True)
+    
+    # Line Chart
+    elif viz_type == "Line Chart":
+        col1, col2 = st.columns(2)
+        with col1:
+            x_col = st.selectbox("Select X-axis column", all_columns, key="line_x")
+        with col2:
+            y_col = st.selectbox("Select Y-axis column", numeric_columns, key="line_y")
+        
+        if x_col and y_col:
+            try:
+                if x_col in numeric_columns:
+                    plot_data = filtered.sort_values(x_col)
+                else:
+                    plot_data = filtered.sort_values(x_col)
+                
+                fig = px.line(plot_data, x=x_col, y=y_col,
+                            title=f"{y_col} over {x_col}",
+                            markers=True)
+                st.plotly_chart(fig, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error creating line chart: {str(e)}")
+    
+    # Bar Chart
+    elif viz_type == "Bar Chart":
+        col1, col2 = st.columns(2)
+        with col1:
+            x_col = st.selectbox("Select Category column", all_columns, key="bar_x")
+        with col2:
+            y_col = st.selectbox("Select Value column", numeric_columns, key="bar_y")
+        
+        if x_col and y_col:
+            try:
+                bar_data = filtered.groupby(x_col)[y_col].sum().reset_index()
+                bar_data = bar_data.sort_values(y_col, ascending=False)
+                
+                fig = px.bar(bar_data, x=x_col, y=y_col,
+                           title=f"{y_col} by {x_col}",
+                           color=y_col,
+                           color_continuous_scale="Viridis")
+                st.plotly_chart(fig, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error creating bar chart: {str(e)}")
+    
+    # Histogram
+    elif viz_type == "Histogram":
+        col_hist = st.selectbox("Select column for histogram", numeric_columns)
+        bins = st.slider("Number of bins", min_value=5, max_value=100, value=20)
+        
+        if col_hist:
+            fig = px.histogram(filtered, x=col_hist, nbins=bins,
+                            title=f"Distribution of {col_hist}",
+                            color_discrete_sequence=["#636EFA"])
+            st.plotly_chart(fig, use_container_width=True)
+    
+    # Box Plot
+    elif viz_type == "Box Plot":
+        col1, col2 = st.columns(2)
+        with col1:
+            y_col = st.selectbox("Select numeric column", numeric_columns, key="box_y")
+        with col2:
+            x_col = st.selectbox("Group by (optional)", options=[None] + categorical_columns, key="box_x")
+        
+        if y_col:
+            if x_col:
+                fig = px.box(filtered, x=x_col, y=y_col,
+                           title=f"Distribution of {y_col} by {x_col}")
+            else:
+                fig = px.box(filtered, y=y_col,
+                           title=f"Distribution of {y_col}")
+            st.plotly_chart(fig, use_container_width=True)
+    
+    # Violin Plot
+    elif viz_type == "Violin Plot":
+        col1, col2 = st.columns(2)
+        with col1:
+            y_col = st.selectbox("Select numeric column", numeric_columns, key="violin_y")
+        with col2:
+            x_col = st.selectbox("Group by (optional)", options=[None] + categorical_columns, key="violin_x")
+        
+        if y_col:
+            if x_col:
+                fig = px.violin(filtered, x=x_col, y=y_col,
+                             title=f"Distribution of {y_col} by {x_col}",
+                             box=True, points="outliers")
+            else:
+                fig = px.violin(filtered, y=y_col,
+                             title=f"Distribution of {y_col}",
+                             box=True, points="outliers")
+            st.plotly_chart(fig, use_container_width=True)
+    
+    # Heatmap (Correlation)
+    elif viz_type == "Heatmap (Correlation)":
+        st.write("Select numeric columns to visualize correlation heatmap:")
+        selected_cols = st.multiselect("Columns for correlation", 
+                                      numeric_columns,
+                                      default=numeric_columns[:min(5, len(numeric_columns))])
+        
+        if len(selected_cols) >= 2:
+            corr_data = filtered[selected_cols].corr()
+            fig = go.Figure(data=go.Heatmap(z=corr_data.values,
+                                           x=corr_data.columns,
+                                           y=corr_data.columns,
+                                           colorscale="RdBu",
+                                           zmid=0,
+                                           text=corr_data.values.round(2),
+                                           texttemplate='%{text:.2f}',
+                                           textfont={"size": 10}))
+            fig.update_layout(title="Correlation Heatmap", height=600)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Please select at least 2 columns to create a correlation heatmap.")
+
+with tab6:
     st.header("Data")
 
     csv = filtered.to_csv(index=False).encode('utf-8')
