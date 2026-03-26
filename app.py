@@ -119,34 +119,30 @@ with tab1:
     filtered['YearMonth'] = filtered['Order Date'].dt.to_period('M').dt.to_timestamp()
 
     # Monthly sales by category (line per category)
-    monthly_sales_cat = filtered.groupby(['YearMonth', 'Category'])['Sales'].sum().unstack(fill_value=0)
-
-    # Render category trends with legend via matplotlib for color control
-    fig, ax = plt.subplots(figsize=(10, 5))
-    for col in monthly_sales_cat.columns:
-        ax.plot(monthly_sales_cat.index, monthly_sales_cat[col], linewidth=2, alpha=0.85, label=col)
-
-    ax.set_title('Monthly Sales Trend by Category')
-    ax.set_xlabel('Month')
-    ax.set_ylabel('Sales')
-
-    # Format x-axis as Year-Month and reduce ticks for readability
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
-    ax.tick_params(axis='x', rotation=45)
-    ax.legend(title='Category', loc='upper left')
-
+    monthly_sales_cat = filtered.groupby(['YearMonth', 'Category'])['Sales'].sum().reset_index()
+    
+    # Create interactive Plotly chart
+    fig = px.line(monthly_sales_cat, x='YearMonth', y='Sales', color='Category',
+                  title='Monthly Sales Trend by Category',
+                  labels={'YearMonth': 'Month', 'Sales': 'Sales ($)'},
+                  markers=True)
+    
+    fig.update_layout(
+        hovermode='x unified',
+        height=500,
+        template='plotly_white'
+    )
+    
+    # Add Q4 highlighting if selected
     if highlight_q4:
-        # highlight Q4 date ranges on the matplotlib chart
-        months = pd.to_datetime(monthly_sales_cat.index)
+        months = pd.to_datetime(monthly_sales_cat['YearMonth'])
         years = sorted({d.year for d in months})
         for year in years:
-            ax.axvspan(pd.Timestamp(f"{year}-10-01"), pd.Timestamp(f"{year}-12-31"), color='orange', alpha=0.15)
-        st.caption("Q4 periods (Oct-Dec) are highlighted in the chart below.")
-
-    st.pyplot(fig)
-    st.markdown("---")
-    st.caption("Monthly sales trend is displayed separately for each category with legend.")
+            fig.add_vrect(x0=pd.Timestamp(f"{year}-10-01"), x1=pd.Timestamp(f"{year}-12-31"),
+                         fillcolor="orange", opacity=0.1, layer="below", line_width=0)
+        st.caption("Q4 periods (Oct-Dec) are highlighted in orange.")
+    
+    st.plotly_chart(fig, use_container_width=True)
 
 with tab2:
     st.header("Sales Analysis")

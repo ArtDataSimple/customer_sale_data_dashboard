@@ -116,15 +116,32 @@ with tab1:
 
     st.subheader("Monthly Sales Trend")
     filtered['YearMonth'] = filtered['Order Date'].dt.to_period('M').dt.to_timestamp()
-    monthly_sales = filtered.groupby('YearMonth')['Sales'].sum().reset_index()
-    monthly_sales['YearMonth'] = monthly_sales['YearMonth'].dt.strftime('%Y-%m')
 
+    # Monthly sales by category (line per category)
+    monthly_sales_cat = filtered.groupby(['YearMonth', 'Category'])['Sales'].sum().reset_index()
+    
+    # Create interactive Plotly chart
+    fig = px.line(monthly_sales_cat, x='YearMonth', y='Sales', color='Category',
+                  title='Monthly Sales Trend by Category',
+                  labels={'YearMonth': 'Month', 'Sales': 'Sales ($)'},
+                  markers=True)
+    
+    fig.update_layout(
+        hovermode='x unified',
+        height=500,
+        template='plotly_white'
+    )
+    
+    # Add Q4 highlighting if selected
     if highlight_q4:
-        # Add Q4 highlighting using Streamlit's chart
-        st.line_chart(monthly_sales.set_index('YearMonth'))
-        st.caption("Q4 periods (Oct-Dec) are highlighted in the data above.")
-    else:
-        st.line_chart(monthly_sales.set_index('YearMonth'))
+        months = pd.to_datetime(monthly_sales_cat['YearMonth'])
+        years = sorted({d.year for d in months})
+        for year in years:
+            fig.add_vrect(x0=pd.Timestamp(f"{year}-10-01"), x1=pd.Timestamp(f"{year}-12-31"),
+                         fillcolor="orange", opacity=0.1, layer="below", line_width=0)
+        st.caption("Q4 periods (Oct-Dec) are highlighted in orange.")
+    
+    st.plotly_chart(fig, use_container_width=True)
 
 with tab2:
     st.header("Sales Analysis")
